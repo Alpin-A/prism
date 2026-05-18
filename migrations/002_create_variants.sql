@@ -7,8 +7,7 @@ CREATE TABLE variants (
     PRIMARY KEY (experiment_id, id)
 );
 
--- Records the first time a user is bucketed into an experiment variant.
--- The primary key enforces one variant per user per experiment (sticky assignment).
+-- Primary key enforces one variant per user per experiment (sticky assignment).
 CREATE TABLE exposures (
     experiment_id  VARCHAR(128) NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
     user_id        VARCHAR(255) NOT NULL,

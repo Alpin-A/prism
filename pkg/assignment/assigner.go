@@ -12,7 +12,6 @@ import (
 // computed as fractions, e.g. 1/3 + 1/3 + 1/3 = 0.9999999999999999.
 const weightTolerance = 1e-9
 
-// Variant is a single arm of an experiment with its share of traffic.
 type Variant struct {
 	ID     string
 	Weight float64 // must be > 0; all weights in an experiment must sum to 1.0
@@ -32,7 +31,6 @@ func Assign(experimentID, userID string, variants []Variant) (string, error) {
 		return "", err
 	}
 
-	// Sort by ID so bucket boundaries are stable regardless of call-site ordering.
 	sorted := make([]Variant, len(variants))
 	copy(sorted, variants)
 	sort.Slice(sorted, func(i, j int) bool {
@@ -41,7 +39,6 @@ func Assign(experimentID, userID string, variants []Variant) (string, error) {
 
 	digest := sha256.Sum256([]byte(fmt.Sprintf("%s:%s", experimentID, userID)))
 
-	// Take the first 8 bytes as a uint64 and normalize to [0.0, 1.0].
 	u := binary.BigEndian.Uint64(digest[:8])
 	normalized := float64(u) / float64(math.MaxUint64)
 

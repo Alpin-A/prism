@@ -2,7 +2,6 @@ package experiment
 
 import "time"
 
-// Status represents the lifecycle stage of an experiment.
 type Status string
 
 const (
@@ -12,7 +11,6 @@ const (
 	StatusConcluded Status = "concluded"
 )
 
-// MetricType defines what kind of metric an experiment measures.
 type MetricType string
 
 const (
@@ -21,7 +19,6 @@ const (
 	MetricTypeCount      MetricType = "count"
 )
 
-// Experiment represents a single A/B test.
 type Experiment struct {
 	ID          string     `json:"id"`
 	Name        string     `json:"name"`
@@ -32,7 +29,6 @@ type Experiment struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
-// Variant represents a single arm of an experiment.
 type Variant struct {
 	ExperimentID string  `json:"experiment_id"`
 	ID           string  `json:"id"`
@@ -40,8 +36,7 @@ type Variant struct {
 	Weight       float64 `json:"weight"`
 }
 
-// ExperimentWithVariants groups an experiment with its variants,
-// which is the typical unit you work with when creating or reading an experiment.
+// ExperimentWithVariants is the typical unit for creating or reading an experiment.
 type ExperimentWithVariants struct {
 	Experiment
 	Variants []Variant `json:"variants"`

@@ -47,7 +47,6 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-// runMigrations creates the tables needed for the tests.
 func runMigrations(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
 
@@ -172,7 +171,6 @@ func TestStoreCreateDuplicateID(t *testing.T) {
 	exp := makeExperiment()
 	require.NoError(t, store.Create(ctx, exp))
 
-	// Creating the same experiment again should fail
 	err := store.Create(ctx, exp)
 	assert.Error(t, err)
 }

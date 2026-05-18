@@ -8,18 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Store handles all database operations for experiments and variants.
 type Store struct {
 	db *pgxpool.Pool
 }
 
-// NewStore creates a new Store backed by the given connection pool.
 func NewStore(db *pgxpool.Pool) *Store {
 	return &Store{db: db}
 }
 
 // Create inserts a new experiment and its variants in a single transaction.
-// Either both succeed or neither does.
 func (s *Store) Create(ctx context.Context, e ExperimentWithVariants) error {
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
@@ -48,8 +45,7 @@ func (s *Store) Create(ctx context.Context, e ExperimentWithVariants) error {
 	return tx.Commit(ctx)
 }
 
-// Get returns an experiment and its variants by ID.
-// Returns an error if the experiment does not exist.
+// Get returns an error wrapping pgx.ErrNoRows if the experiment does not exist.
 func (s *Store) Get(ctx context.Context, id string) (ExperimentWithVariants, error) {
 	var e ExperimentWithVariants
 
@@ -87,7 +83,6 @@ func (s *Store) Get(ctx context.Context, id string) (ExperimentWithVariants, err
 	return e, rows.Err()
 }
 
-// UpdateStatus moves an experiment to a new status.
 func (s *Store) UpdateStatus(ctx context.Context, id string, status Status) error {
 	_, err := s.db.Exec(ctx, `
 		UPDATE experiments
@@ -100,7 +95,7 @@ func (s *Store) UpdateStatus(ctx context.Context, id string, status Status) erro
 	return nil
 }
 
-// List returns all experiments, ordered by creation time descending.
+// List returns all experiments ordered by created_at DESC.
 func (s *Store) List(ctx context.Context) ([]ExperimentWithVariants, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT id, name, description, status, metric_type, created_at, updated_at
