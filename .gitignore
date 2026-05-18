@@ -1,8 +1,34 @@
+# Build output
 /prism
+dist/
+tmp/
+
+# Test & profiling artifacts
 *.test
 *.out
 *.prof
 coverage.html
+
+# Go workspace (local-only multi-module setup)
 go.work
 go.work.sum
+
+# Go vendor directory
+vendor/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# macOS
 .DS_Store
