@@ -1,0 +1,8 @@
+/prism
+*.test
+*.out
+*.prof
+coverage.html
+go.work
+go.work.sum
+.DS_Store
