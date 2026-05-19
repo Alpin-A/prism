@@ -74,6 +74,27 @@ func runMigrations(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 		)
 	`)
 	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, `
+		CREATE TABLE exposures (
+			experiment_id  VARCHAR(128) NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+			user_id        VARCHAR(255) NOT NULL,
+			variant_id     VARCHAR(128) NOT NULL,
+			first_seen     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (experiment_id, user_id)
+		)
+	`)
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, `
+		CREATE TABLE assignment_overrides (
+			experiment_id  VARCHAR(128) NOT NULL REFERENCES experiments(id) ON DELETE CASCADE,
+			user_id        VARCHAR(255) NOT NULL,
+			variant_id     VARCHAR(128) NOT NULL,
+			PRIMARY KEY (experiment_id, user_id)
+		)
+	`)
+	require.NoError(t, err)
 }
 
 func makeExperiment() ExperimentWithVariants {

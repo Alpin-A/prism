@@ -2,12 +2,15 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"math"
 	"net/http"
 	"time"
 
 	"github.com/Alpin-A/prism/pkg/assignment"
 	"github.com/Alpin-A/prism/pkg/experiment"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 type Handler struct {
@@ -38,6 +41,22 @@ func (h *Handler) createExperiment(w http.ResponseWriter, r *http.Request) {
 
 	if body.ID == "" || body.Name == "" || len(body.Variants) == 0 {
 		writeError(w, http.StatusBadRequest, "id, name, and variants are required")
+		return
+	}
+
+	switch body.MetricType {
+	case experiment.MetricTypeConversion, experiment.MetricTypeRevenue, experiment.MetricTypeCount:
+	default:
+		writeError(w, http.StatusBadRequest, "metric_type must be one of: conversion, revenue, count")
+		return
+	}
+
+	var weightSum float64
+	for _, v := range body.Variants {
+		weightSum += v.Weight
+	}
+	if math.Abs(weightSum-1.0) > 1e-9 {
+		writeError(w, http.StatusBadRequest, "variant weights must sum to 1.0")
 		return
 	}
 
@@ -76,7 +95,11 @@ func (h *Handler) getExperiment(w http.ResponseWriter, r *http.Request) {
 
 	exp, err := h.store.Get(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "experiment not found")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "experiment not found")
+		} else {
+			writeError(w, http.StatusInternalServerError, "failed to get experiment")
+		}
 		return
 	}
 
@@ -105,8 +128,19 @@ func (h *Handler) updateStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	switch body.Status {
+	case experiment.StatusDraft, experiment.StatusActive, experiment.StatusPaused, experiment.StatusConcluded:
+	default:
+		writeError(w, http.StatusBadRequest, "status must be one of: draft, active, paused, concluded")
+		return
+	}
+
 	if err := h.store.UpdateStatus(r.Context(), id, body.Status); err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to update status")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "experiment not found")
+		} else {
+			writeError(w, http.StatusInternalServerError, "failed to update status")
+		}
 		return
 	}
 
@@ -124,7 +158,11 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 
 	exp, err := h.store.Get(r.Context(), experimentID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "experiment not found")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "experiment not found")
+		} else {
+			writeError(w, http.StatusInternalServerError, "failed to get experiment")
+		}
 		return
 	}
 

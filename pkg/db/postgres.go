@@ -13,12 +13,17 @@ type Config struct {
 	User     string
 	Password string
 	DBName   string
+	SSLMode  string // defaults to "disable" if empty
 }
 
 func (c Config) DSN() string {
+	sslmode := c.SSLMode
+	if sslmode == "" {
+		sslmode = "disable"
+	}
 	return fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		c.Host, c.Port, c.User, c.Password, c.DBName,
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		c.Host, c.Port, c.User, c.Password, c.DBName, sslmode,
 	)
 }
 

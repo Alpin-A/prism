@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -84,13 +85,16 @@ func (s *Store) Get(ctx context.Context, id string) (ExperimentWithVariants, err
 }
 
 func (s *Store) UpdateStatus(ctx context.Context, id string, status Status) error {
-	_, err := s.db.Exec(ctx, `
+	tag, err := s.db.Exec(ctx, `
 		UPDATE experiments
 		SET status = $1, updated_at = $2
 		WHERE id = $3
 	`, status, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("updating status for %q: %w", id, err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("updating status for %q: %w", id, pgx.ErrNoRows)
 	}
 	return nil
 }

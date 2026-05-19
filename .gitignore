@@ -31,5 +31,8 @@ vendor/
 # Logs
 *.log
 
+# Go debugger (Delve)
+__debug_bin*
+
 # macOS
 .DS_Store
