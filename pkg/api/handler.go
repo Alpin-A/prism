@@ -177,6 +177,8 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	assignmentsTotal.WithLabelValues(experimentID, variantID).Inc()
+
 	writeJSON(w, http.StatusOK, map[string]string{
 		"experiment_id": experimentID,
 		"user_id":       userID,

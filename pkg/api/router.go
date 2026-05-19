@@ -4,6 +4,7 @@ import (
 	"github.com/Alpin-A/prism/pkg/experiment"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func NewRouter(store *experiment.Store) *chi.Mux {
@@ -11,6 +12,10 @@ func NewRouter(store *experiment.Store) *chi.Mux {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(metricsMiddleware)
+
+	// Prometheus scrapes this endpoint every 15 seconds.
+	r.Handle("/metrics", promhttp.Handler())
 
 	h := NewHandler(store)
 
