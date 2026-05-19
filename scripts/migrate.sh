@@ -4,8 +4,12 @@ set -e
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
 DB_USER="${DB_USER}"
-DB_PASSWORD="${DB_PASSWORD}"
 DB_NAME="${DB_NAME}"
+
+if [[ -z "$DB_PASSWORD" ]]; then
+  echo "Error: DB_PASSWORD environment variable is not set" >&2
+  exit 1
+fi
 
 echo "Running migrations against $DB_HOST:$DB_PORT/$DB_NAME..."
 

@@ -18,7 +18,7 @@ func main() {
 		Host:     getenv("DB_HOST", "localhost"),
 		Port:     5432,
 		User:     getenv("DB_USER", ""),
-		Password: getenv("DB_PASSWORD", ""),
+		Password: requireenv("DB_PASSWORD"),
 		DBName:   getenv("DB_NAME", ""),
 	})
 	if err != nil {
@@ -41,4 +41,12 @@ func getenv(key, defaultVal string) string {
 		return v
 	}
 	return defaultVal
+}
+
+func requireenv(key string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	log.Fatalf("required environment variable %q is not set", key)
+	return ""
 }
