@@ -8,7 +8,8 @@ I had worked with data pipelines and analytics before, but kept reading engineer
 
 Under active development. Currently implemented:
 - [x] Deterministic weighted variant assignment
-- [ ] Experiment API
+- [x] Experiment API (create, read, list, update status)
+- [x] Docker Compose infrastructure (Postgres, Redis, Redpanda, Prometheus, Grafana)
 - [ ] Kafka metric pipeline
 - [ ] Statistical significance engine
 - [ ] Feature flags
