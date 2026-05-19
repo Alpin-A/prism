@@ -9,16 +9,18 @@ import (
 
 	"github.com/Alpin-A/prism/pkg/assignment"
 	"github.com/Alpin-A/prism/pkg/experiment"
+	"github.com/Alpin-A/prism/pkg/metrics"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 )
 
 type Handler struct {
-	store *experiment.Store
+	store     *experiment.Store
+	publisher *metrics.Publisher
 }
 
-func NewHandler(store *experiment.Store) *Handler {
-	return &Handler{store: store}
+func NewHandler(store *experiment.Store, publisher *metrics.Publisher) *Handler {
+	return &Handler{store: store, publisher: publisher}
 }
 
 func (h *Handler) createExperiment(w http.ResponseWriter, r *http.Request) {
@@ -184,6 +186,36 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 		"user_id":       userID,
 		"variant_id":    variantID,
 	})
+}
+
+// publishEvent handles POST /api/v1/events.
+func (h *Handler) publishEvent(w http.ResponseWriter, r *http.Request) {
+	var event metrics.MetricEvent
+
+	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if event.ExperimentID == "" || event.UserID == "" || event.VariantID == "" || event.EventType == "" {
+		writeError(w, http.StatusBadRequest, "experiment_id, user_id, variant_id, and event_type are required")
+		return
+	}
+
+	if event.Value == 0 {
+		event.Value = 1.0
+	}
+
+	if event.OccurredAt.IsZero() {
+		event.OccurredAt = time.Now().UTC()
+	}
+
+	if err := h.publisher.Publish(r.Context(), event); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to publish event")
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

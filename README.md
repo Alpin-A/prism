@@ -10,7 +10,7 @@ Under active development. Currently implemented:
 - [x] Deterministic weighted variant assignment
 - [x] Experiment API (create, read, list, update status)
 - [x] Docker Compose infrastructure (Postgres, Redis, Redpanda, Prometheus, Grafana)
-- [ ] Kafka metric pipeline
+- [x] Kafka metric pipeline
 - [ ] Statistical significance engine
 - [ ] Feature flags
 - [ ] Grafana dashboard

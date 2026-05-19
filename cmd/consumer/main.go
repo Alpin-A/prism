@@ -2,23 +2,19 @@ package main
 
 import (
 	"context"
-	"errors"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
 
-	"github.com/Alpin-A/prism/pkg/api"
 	"github.com/Alpin-A/prism/pkg/db"
-	"github.com/Alpin-A/prism/pkg/experiment"
 	"github.com/Alpin-A/prism/pkg/metrics"
 )
 
 func main() {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	dbPort, err := strconv.Atoi(getenv("DB_PORT", "5432"))
 	if err != nil {
@@ -38,35 +34,26 @@ func main() {
 	}
 	defer pool.Close()
 
-	store := experiment.NewStore(pool)
-
-	publisher, err := metrics.NewPublisher(getenv("KAFKA_BROKER", "localhost:9092"))
+	consumer, err := metrics.NewConsumer(
+		getenv("KAFKA_BROKER", "localhost:9092"),
+		getenv("KAFKA_GROUP_ID", "prism-metric-consumer"),
+		pool,
+	)
 	if err != nil {
-		log.Fatalf("creating kafka publisher: %v", err)
+		log.Fatalf("creating consumer: %v", err)
 	}
-	defer publisher.Close()
 
-	router := api.NewRouter(store, publisher)
-
-	addr := getenv("ADDR", ":8080")
-	srv := &http.Server{Addr: addr, Handler: router}
-
-	go func() {
-		log.Printf("prism-api listening on %s", addr)
-		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("server error: %v", err)
-		}
-	}()
-
+	// Cancel the context on SIGINT or SIGTERM so the consumer shuts down cleanly.
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	go func() {
+		<-quit
+		log.Println("shutting down consumer...")
+		cancel()
+	}()
 
-	log.Println("shutting down...")
-	shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		log.Fatalf("server forced to shutdown: %v", err)
+	if err := consumer.Run(ctx); err != nil {
+		log.Fatalf("consumer error: %v", err)
 	}
 }
 
