@@ -10,10 +10,12 @@ Under active development. Currently implemented:
 - [x] Deterministic weighted variant assignment
 - [x] Experiment API (create, read, list, update status)
 - [x] Docker Compose infrastructure (Postgres, Redis, Redpanda, Prometheus, Grafana)
-- [x] Kafka metric pipeline
-- [ ] Statistical significance engine
+- [x] Kafka metric event pipeline with idempotent consumer
+- [x] Statistical significance engine (Python gRPC, z-test, Wilson CIs)
+- [x] Prometheus metrics instrumentation
 - [ ] Feature flags
 - [ ] Grafana dashboard
+- [ ] Traffic generator / demo
 
 ## How Assignment Works
 
