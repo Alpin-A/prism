@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package stats;
+
+option go_package = "github.com/Alpin-A/prism/pkg/statsgrpc";
+
+// StatsService computes statistical significance for experiment results.
+service StatsService {
+  rpc GetExperimentResult(ExperimentResultRequest) returns (ExperimentResultResponse);
+}
+
+// ExperimentResultRequest identifies which experiment to compute results for.
+message ExperimentResultRequest {
+  string experiment_id = 1;
+  string event_type = 2;  // e.g. "conversion"
+}
+
+// VariantResult holds the stats for one variant.
+message VariantResult {
+  string variant_id = 1;
+  int64  n_users    = 2;  // number of users exposed
+  int64  n_events   = 3;  // number of conversions
+  double rate       = 4;  // conversion rate (n_events / n_users)
+  double ci_lower   = 5;  // 95% confidence interval lower bound
+  double ci_upper   = 6;  // 95% confidence interval upper bound
+}
+
+// ExperimentResultResponse contains the full statistical result.
+message ExperimentResultResponse {
+  string experiment_id  = 1;
+  string event_type     = 2;
+  repeated VariantResult variants = 3;
+  double p_value        = 4;  // two-sided p-value for control vs treatment
+  bool   is_significant = 5;  // true if p_value < 0.05
+  string control_id     = 6;  // which variant is the control
+}

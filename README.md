@@ -32,4 +32,4 @@ Measured on Apple M4 Pro:
 
 ## Inspiration
 
-Netflix Gibbs, Meta Gatekeeper, LinkedIn XLNT
+Netflix Gibbs, Meta Gatekeeper, LinkedIn XLNTs

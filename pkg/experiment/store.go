@@ -99,6 +99,18 @@ func (s *Store) UpdateStatus(ctx context.Context, id string, status Status) erro
 	return nil
 }
 
+func (s *Store) RecordExposure(ctx context.Context, experimentID, userID, variantID string) error {
+	_, err := s.db.Exec(ctx, `
+		INSERT INTO exposures (experiment_id, user_id, variant_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (experiment_id, user_id) DO NOTHING
+	`, experimentID, userID, variantID)
+	if err != nil {
+		return fmt.Errorf("recording exposure: %w", err)
+	}
+	return nil
+}
+
 // List returns all experiments ordered by created_at DESC.
 func (s *Store) List(ctx context.Context) ([]ExperimentWithVariants, error) {
 	rows, err := s.db.Query(ctx, `

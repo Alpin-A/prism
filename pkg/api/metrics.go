@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	// httpRequestsTotal counts all HTTP requests by method, path, and status code.
 	httpRequestsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "prism_http_requests_total",
@@ -19,7 +18,6 @@ var (
 		[]string{"method", "path", "status"},
 	)
 
-	// httpRequestDuration tracks how long each request takes.
 	httpRequestDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "prism_http_request_duration_seconds",
@@ -29,7 +27,6 @@ var (
 		[]string{"method", "path"},
 	)
 
-	// assignmentsTotal counts how many variant assignments have been computed.
 	assignmentsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "prism_assignments_total",
@@ -55,7 +52,6 @@ func (rw *responseWriter) WriteHeader(status int) {
 	rw.ResponseWriter.WriteHeader(status)
 }
 
-// metricsMiddleware records request count and duration for every HTTP request.
 func metricsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

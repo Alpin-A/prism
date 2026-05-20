@@ -15,6 +15,7 @@ import (
 	"github.com/Alpin-A/prism/pkg/db"
 	"github.com/Alpin-A/prism/pkg/experiment"
 	"github.com/Alpin-A/prism/pkg/metrics"
+	"github.com/Alpin-A/prism/pkg/statsclient"
 )
 
 func main() {
@@ -46,7 +47,14 @@ func main() {
 	}
 	defer publisher.Close()
 
-	router := api.NewRouter(store, publisher)
+	statsAddr := getenv("STATS_GRPC_ADDR", "localhost:50051")
+	sc, err := statsclient.New(statsAddr)
+	if err != nil {
+		log.Fatalf("connecting to stats service: %v", err)
+	}
+	defer sc.Close()
+
+	router := api.NewRouter(store, publisher, sc)
 
 	addr := getenv("ADDR", ":8080")
 	srv := &http.Server{Addr: addr, Handler: router}

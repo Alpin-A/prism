@@ -11,13 +11,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Consumer reads metric events from Kafka and writes them to Postgres.
 type Consumer struct {
 	consumer *kafka.Consumer
 	db       *pgxpool.Pool
 }
 
-// NewConsumer creates a Consumer that reads from the given broker and writes to Postgres.
 func NewConsumer(brokerAddr, groupID string, db *pgxpool.Pool) (*Consumer, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
 		"bootstrap.servers": brokerAddr,
@@ -37,7 +35,6 @@ func NewConsumer(brokerAddr, groupID string, db *pgxpool.Pool) (*Consumer, error
 	return &Consumer{consumer: c, db: db}, nil
 }
 
-// Run starts the consume loop. It blocks until ctx is cancelled.
 func (c *Consumer) Run(ctx context.Context) error {
 	log.Println("metric consumer started")
 	for {
@@ -69,7 +66,6 @@ func (c *Consumer) Run(ctx context.Context) error {
 	}
 }
 
-// handleMessage deserialises a Kafka message and writes it to Postgres.
 func (c *Consumer) handleMessage(ctx context.Context, msg *kafka.Message) error {
 	var event MetricEvent
 	if err := json.Unmarshal(msg.Value, &event); err != nil {
@@ -79,9 +75,6 @@ func (c *Consumer) handleMessage(ctx context.Context, msg *kafka.Message) error 
 	return c.writeEvent(ctx, event)
 }
 
-// writeEvent writes a MetricEvent to Postgres.
-// The unique constraint on (experiment_id, user_id, event_type) means duplicate
-// events are silently ignored, giving us idempotent writes.
 func (c *Consumer) writeEvent(ctx context.Context, event MetricEvent) error {
 	tx, err := c.db.Begin(ctx)
 	if err != nil {

@@ -1,5 +1,7 @@
 # Build output
 /prism
+/api
+/consumer
 dist/
 tmp/
 
@@ -22,6 +24,13 @@ vendor/
 .env.*
 !.env.example
 
+# TLS certificates and private keys
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
 # IDE
 .idea/
 .vscode/
@@ -36,3 +45,12 @@ __debug_bin*
 
 # macOS
 .DS_Store
+._*
+
+# Python
+stats/.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+.coverage
+htmlcov/

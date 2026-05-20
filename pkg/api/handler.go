@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"math"
 	"net/http"
 	"time"
@@ -10,17 +12,21 @@ import (
 	"github.com/Alpin-A/prism/pkg/assignment"
 	"github.com/Alpin-A/prism/pkg/experiment"
 	"github.com/Alpin-A/prism/pkg/metrics"
+	"github.com/Alpin-A/prism/pkg/statsclient"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
-	store     *experiment.Store
-	publisher *metrics.Publisher
+	store       *experiment.Store
+	publisher   *metrics.Publisher
+	statsClient *statsclient.Client
 }
 
-func NewHandler(store *experiment.Store, publisher *metrics.Publisher) *Handler {
-	return &Handler{store: store, publisher: publisher}
+func NewHandler(store *experiment.Store, publisher *metrics.Publisher, statsClient *statsclient.Client) *Handler {
+	return &Handler{store: store, publisher: publisher, statsClient: statsClient}
 }
 
 func (h *Handler) createExperiment(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +185,14 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := h.store.RecordExposure(ctx, experimentID, userID, variantID); err != nil {
+			log.Printf("recording exposure: %v", err)
+		}
+	}()
+
 	assignmentsTotal.WithLabelValues(experimentID, variantID).Inc()
 
 	writeJSON(w, http.StatusOK, map[string]string{
@@ -216,6 +230,32 @@ func (h *Handler) publishEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (h *Handler) getExperimentResults(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	eventType := r.URL.Query().Get("event_type")
+	if eventType == "" {
+		eventType = "conversion"
+	}
+
+	resp, err := h.statsClient.GetExperimentResult(r.Context(), id, eventType)
+	if err != nil {
+		if st, ok := status.FromError(err); ok {
+			switch st.Code() {
+			case codes.NotFound:
+				writeError(w, http.StatusNotFound, st.Message())
+				return
+			case codes.InvalidArgument:
+				writeError(w, http.StatusBadRequest, st.Message())
+				return
+			}
+		}
+		writeError(w, http.StatusInternalServerError, "stats service error")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

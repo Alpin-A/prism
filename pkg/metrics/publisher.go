@@ -10,12 +10,10 @@ import (
 
 const TopicMetricEvents = "prism.metric.events"
 
-// Publisher publishes metric events to Kafka.
 type Publisher struct {
 	producer *kafka.Producer
 }
 
-// NewPublisher creates a new Publisher connected to the given Kafka broker.
 func NewPublisher(brokerAddr string) (*Publisher, error) {
 	producer, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": brokerAddr,
@@ -26,7 +24,6 @@ func NewPublisher(brokerAddr string) (*Publisher, error) {
 	return &Publisher{producer: producer}, nil
 }
 
-// Publish sends a MetricEvent to Kafka.
 // The event is keyed by experiment_id so all events for the same experiment
 // land in the same partition, preserving the order
 func (p *Publisher) Publish(ctx context.Context, event MetricEvent) error {
@@ -64,7 +61,6 @@ func (p *Publisher) Publish(ctx context.Context, event MetricEvent) error {
 	return nil
 }
 
-// Close flushes any pending messages and shuts down the producer.
 func (p *Publisher) Close() {
 	p.producer.Flush(5000)
 	p.producer.Close()

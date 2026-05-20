@@ -1,0 +1,6 @@
+scipy>=1.17.1
+numpy>=2.4.0
+grpcio>=1.80.0
+grpcio-tools>=1.80.0
+psycopg2-binary>=2.9.12
+pytest>=9.0
