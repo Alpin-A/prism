@@ -13,7 +13,7 @@ Under active development. Currently implemented:
 - [x] Kafka metric event pipeline with idempotent consumer
 - [x] Statistical significance engine (Python gRPC, z-test, Wilson CIs)
 - [x] Prometheus metrics instrumentation
-- [ ] Feature flags
+- [x] Feature flags (percentage rollout, user overrides)
 - [ ] Grafana dashboard
 - [ ] Traffic generator / demo
 
