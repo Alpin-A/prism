@@ -14,6 +14,7 @@ import (
 	"github.com/Alpin-A/prism/pkg/api"
 	"github.com/Alpin-A/prism/pkg/db"
 	"github.com/Alpin-A/prism/pkg/experiment"
+	"github.com/Alpin-A/prism/pkg/flags"
 	"github.com/Alpin-A/prism/pkg/metrics"
 	"github.com/Alpin-A/prism/pkg/statsclient"
 )
@@ -54,7 +55,10 @@ func main() {
 	}
 	defer sc.Close()
 
-	router := api.NewRouter(store, publisher, sc)
+	flagStore := flags.NewStore(pool)
+	flagEvaluator := flags.NewEvaluator(flagStore)
+
+	router := api.NewRouter(store, publisher, sc, flagStore, flagEvaluator)
 
 	addr := getenv("ADDR", ":8080")
 	srv := &http.Server{Addr: addr, Handler: router}

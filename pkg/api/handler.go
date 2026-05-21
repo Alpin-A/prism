@@ -11,6 +11,7 @@ import (
 
 	"github.com/Alpin-A/prism/pkg/assignment"
 	"github.com/Alpin-A/prism/pkg/experiment"
+	flagspkg "github.com/Alpin-A/prism/pkg/flags"
 	"github.com/Alpin-A/prism/pkg/metrics"
 	"github.com/Alpin-A/prism/pkg/statsclient"
 	"github.com/go-chi/chi/v5"
@@ -20,13 +21,27 @@ import (
 )
 
 type Handler struct {
-	store       *experiment.Store
-	publisher   *metrics.Publisher
-	statsClient *statsclient.Client
+	store         *experiment.Store
+	publisher     *metrics.Publisher
+	statsClient   *statsclient.Client
+	flagStore     *flagspkg.Store
+	flagEvaluator *flagspkg.Evaluator
 }
 
-func NewHandler(store *experiment.Store, publisher *metrics.Publisher, statsClient *statsclient.Client) *Handler {
-	return &Handler{store: store, publisher: publisher, statsClient: statsClient}
+func NewHandler(
+	store *experiment.Store,
+	publisher *metrics.Publisher,
+	statsClient *statsclient.Client,
+	flagStore *flagspkg.Store,
+	flagEvaluator *flagspkg.Evaluator,
+) *Handler {
+	return &Handler{
+		store:         store,
+		publisher:     publisher,
+		statsClient:   statsClient,
+		flagStore:     flagStore,
+		flagEvaluator: flagEvaluator,
+	}
 }
 
 func (h *Handler) createExperiment(w http.ResponseWriter, r *http.Request) {
@@ -256,6 +271,96 @@ func (h *Handler) getExperimentResults(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) createFlag(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		ID         string  `json:"id"`
+		Name       string  `json:"name"`
+		Enabled    bool    `json:"enabled"`
+		RolloutPct float64 `json:"rollout_pct"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if body.ID == "" || body.Name == "" {
+		writeError(w, http.StatusBadRequest, "id and name are required")
+		return
+	}
+
+	if body.RolloutPct < 0 || body.RolloutPct > 100 {
+		writeError(w, http.StatusBadRequest, "rollout_pct must be between 0 and 100")
+		return
+	}
+
+	now := time.Now().UTC()
+	flag := flagspkg.Flag{
+		ID:         body.ID,
+		Name:       body.Name,
+		Enabled:    body.Enabled,
+		RolloutPct: body.RolloutPct,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+
+	if err := h.flagStore.Create(r.Context(), flag); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create flag")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, flag)
+}
+
+func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
+	flagID := chi.URLParam(r, "id")
+	userID := r.URL.Query().Get("user_id")
+
+	if userID == "" {
+		writeError(w, http.StatusBadRequest, "user_id is required")
+		return
+	}
+
+	result, err := h.flagEvaluator.Evaluate(r.Context(), flagID, userID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "flag not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) updateFlag(w http.ResponseWriter, r *http.Request) {
+	flagID := chi.URLParam(r, "id")
+
+	var body struct {
+		Enabled    *bool    `json:"enabled"`
+		RolloutPct *float64 `json:"rollout_pct"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if body.Enabled == nil || body.RolloutPct == nil {
+		writeError(w, http.StatusBadRequest, "enabled and rollout_pct are required")
+		return
+	}
+
+	if *body.RolloutPct < 0 || *body.RolloutPct > 100 {
+		writeError(w, http.StatusBadRequest, "rollout_pct must be between 0 and 100")
+		return
+	}
+
+	if err := h.flagStore.Update(r.Context(), flagID, *body.Enabled, *body.RolloutPct); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update flag")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
