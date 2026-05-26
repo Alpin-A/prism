@@ -50,7 +50,7 @@ def _load_variants(
                 v.id                            AS variant_id,
                 v.weight,
                 COUNT(DISTINCT e.user_id)       AS n_users,
-                COALESCE(am.n_events, 0)        AS n_events
+                COALESCE(MAX(am.n_events), 0)   AS n_events
             FROM variants v
             LEFT JOIN exposures e
                    ON e.experiment_id = v.experiment_id
