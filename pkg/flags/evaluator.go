@@ -42,7 +42,7 @@ func (e *Evaluator) Evaluate(ctx context.Context, flagID, userID string) (EvalRe
 	return EvalResult{FlagID: flagID, UserID: userID, Enabled: enabled, Reason: "rollout"}, nil
 }
 
-// Decide whether a user falls within the rollout percentage. (use same SHA-256 hashing approach as assignment package)
+// hashRollout uses the same SHA-256 bucketing approach as the assignment package.
 func hashRollout(flagID, userID string, rolloutPct float64) bool {
 	key := fmt.Sprintf("flag:%s:%s", flagID, userID)
 	digest := sha256.Sum256([]byte(key))

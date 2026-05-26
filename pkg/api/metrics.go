@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -62,7 +63,12 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start).Seconds()
 		status := strconv.Itoa(rw.status)
 
-		httpRequestsTotal.WithLabelValues(r.Method, r.URL.Path, status).Inc()
-		httpRequestDuration.WithLabelValues(r.Method, r.URL.Path).Observe(duration)
+		routePattern := chi.RouteContext(r.Context()).RoutePattern()
+		if routePattern == "" {
+			routePattern = r.URL.Path
+		}
+
+		httpRequestsTotal.WithLabelValues(r.Method, routePattern, status).Inc()
+		httpRequestDuration.WithLabelValues(r.Method, routePattern).Observe(duration)
 	})
 }

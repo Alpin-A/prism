@@ -1,6 +1,3 @@
-version: '3.9'
-
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,6 +15,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Reserved for assignment caching — not yet wired into application code.
   redis:
     image: redis:7-alpine
     ports:

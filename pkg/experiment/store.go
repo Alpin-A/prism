@@ -89,7 +89,7 @@ func (s *Store) UpdateStatus(ctx context.Context, id string, status Status) erro
 		UPDATE experiments
 		SET status = $1, updated_at = $2
 		WHERE id = $3
-	`, status, time.Now(), id)
+	`, status, time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("updating status for %q: %w", id, err)
 	}
@@ -111,7 +111,6 @@ func (s *Store) RecordExposure(ctx context.Context, experimentID, userID, varian
 	return nil
 }
 
-// List returns all experiments ordered by created_at DESC.
 func (s *Store) List(ctx context.Context) ([]ExperimentWithVariants, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT id, name, description, status, metric_type, created_at, updated_at

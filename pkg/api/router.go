@@ -36,6 +36,7 @@ func NewRouter(
 		r.Get("/assign", h.assign)
 		r.Post("/events", h.publishEvent)
 		r.Post("/flags", h.createFlag)
+		r.Get("/flags", h.listFlags)
 		r.Get("/flags/{id}/evaluate", h.evaluateFlag)
 		r.Patch("/flags/{id}", h.updateFlag)
 	})

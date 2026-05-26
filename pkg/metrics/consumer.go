@@ -57,8 +57,9 @@ func (c *Consumer) Run(ctx context.Context) error {
 				continue
 			}
 
-			// Commit the offset only after the message has been successfully written
-			// to Postgres. This ensures we never lose an event if the consumer crashes.
+			// Commit the offset only after the message is fully handled — either written
+			// or confirmed as a duplicate. This ensures we never lose an event if the
+			// consumer crashes between processing and committing.
 			if _, err := c.consumer.CommitMessage(msg); err != nil {
 				log.Printf("failed to commit offset: %v", err)
 			}
@@ -72,10 +73,6 @@ func (c *Consumer) handleMessage(ctx context.Context, msg *kafka.Message) error 
 		return fmt.Errorf("unmarshalling event: %w", err)
 	}
 
-	return c.writeEvent(ctx, event)
-}
-
-func (c *Consumer) writeEvent(ctx context.Context, event MetricEvent) error {
 	tx, err := c.db.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("beginning transaction: %w", err)
@@ -83,13 +80,18 @@ func (c *Consumer) writeEvent(ctx context.Context, event MetricEvent) error {
 	defer tx.Rollback(ctx)
 
 	// Insert the raw event. ON CONFLICT DO NOTHING deduplicates retried messages.
-	_, err = tx.Exec(ctx, `
+	tag, err := tx.Exec(ctx, `
 		INSERT INTO metric_events (experiment_id, user_id, variant_id, event_type, value, occurred_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (experiment_id, user_id, event_type) DO NOTHING
 	`, event.ExperimentID, event.UserID, event.VariantID, event.EventType, event.Value, event.OccurredAt)
 	if err != nil {
 		return fmt.Errorf("inserting metric event: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		// Duplicate message — the raw event was already recorded. Skip the
+		// agg_metrics update to avoid inflating counts on replay.
+		return tx.Commit(ctx)
 	}
 
 	// Upsert into the pre-aggregated table so the stats engine can query

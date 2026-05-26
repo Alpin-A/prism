@@ -43,13 +43,16 @@ func (s *Store) Get(ctx context.Context, id string) (Flag, error) {
 }
 
 func (s *Store) Update(ctx context.Context, id string, enabled bool, rolloutPct float64) error {
-	_, err := s.db.Exec(ctx, `
+	tag, err := s.db.Exec(ctx, `
 		UPDATE feature_flags
 		SET enabled = $1, rollout_pct = $2, updated_at = $3
 		WHERE id = $4
 	`, enabled, rolloutPct, time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("updating flag %q: %w", id, err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("updating flag %q: %w", id, pgx.ErrNoRows)
 	}
 	return nil
 }

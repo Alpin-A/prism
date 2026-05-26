@@ -217,7 +217,6 @@ func (h *Handler) assign(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// publishEvent handles POST /api/v1/events.
 func (h *Handler) publishEvent(w http.ResponseWriter, r *http.Request) {
 	var event metrics.MetricEvent
 
@@ -325,7 +324,11 @@ func (h *Handler) evaluateFlag(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.flagEvaluator.Evaluate(r.Context(), flagID, userID)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "flag not found")
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "flag not found")
+		} else {
+			writeError(w, http.StatusInternalServerError, "failed to evaluate flag")
+		}
 		return
 	}
 
@@ -361,6 +364,15 @@ func (h *Handler) updateFlag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) listFlags(w http.ResponseWriter, r *http.Request) {
+	flags, err := h.flagStore.List(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list flags")
+		return
+	}
+	writeJSON(w, http.StatusOK, flags)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

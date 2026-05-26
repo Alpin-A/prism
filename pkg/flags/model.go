@@ -2,7 +2,7 @@ package flags
 
 import "time"
 
-// Represents a feature flag with a percentage-based rollout ranging from 0.0 to 100.0.
+// Flag is a feature flag with percentage-based rollout.
 type Flag struct {
 	ID         string    `json:"id"`
 	Name       string    `json:"name"`
@@ -12,14 +12,14 @@ type Flag struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
-// Forces a specific user to see a flag as on or off, regardless of the rollout percentage
+// Override forces a specific user to see a flag as enabled or disabled, bypassing the rollout percentage.
 type Override struct {
 	FlagID  string `json:"flag_id"`
 	UserID  string `json:"user_id"`
 	Enabled bool   `json:"enabled"`
 }
 
-// Result of evaluating a flag for a user (override, rollout, or disabled)
+// EvalResult is the result of evaluating a flag for a specific user.
 type EvalResult struct {
 	FlagID  string `json:"flag_id"`
 	UserID  string `json:"user_id"`
