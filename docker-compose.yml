@@ -64,10 +64,12 @@ services:
       PROMETHEUS_INTERNAL_PORT: ${PROMETHEUS_INTERNAL_PORT}
     volumes:
       - ./configs/grafana/provisioning:/etc/grafana/provisioning
+      - ./dashboards:/etc/grafana/dashboards
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
       - postgres
+  
 
 volumes:
   postgres_data:
