@@ -12,7 +12,7 @@ I had worked with data pipelines and analytics before, but kept reading engineer
 
 **Statistical significance engine** — a Python gRPC service computes two-proportion z-tests with Wilson score confidence intervals. Bonferroni correction is applied for multi-arm experiments. The false positive rate is validated at ~5% via Monte Carlo simulation.
 
-**Feature flags** — percentage rollout using the same hash-based approach as experiment assignment, with user-level overrides and a globally disable switch.
+**Feature flags** — percentage rollout using the same hash-based approach as experiment assignment, with user-level overrides and a global kill switch.
 
 ## Architecture
 
@@ -60,10 +60,10 @@ open http://localhost:3000   # Grafana dashboard
 
 Measured on Apple M4 Pro:
 
-| Benchmark | ns/op | ops/sec |
-|---|---|---|
-| Single-core assignment | 199 | ~5M |
-| Parallel assignment | 95 | ~10M |
+| Benchmark              | ns/op | ops/sec |
+|------------------------|-------|---------|
+| Single-core assignment | 199   | ~5M     |
+| Parallel assignment    | 95    | ~10M    |
 
 ## Status
 
@@ -79,4 +79,4 @@ Measured on Apple M4 Pro:
 
 ## Inspiration
 
-Netflix Gibbs, Meta Gatekeeper, LinkedIn XLNT
+Netflix Experimentation Platform, Meta Gatekeeper, LinkedIn XLNT
